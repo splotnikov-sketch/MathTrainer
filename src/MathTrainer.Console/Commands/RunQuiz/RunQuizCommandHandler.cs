@@ -70,26 +70,37 @@ namespace MathTrainer.Console.Commands.RunQuiz
                         CancellationTokenSource = cancellationTokenSource
                     });
 
-
                 try
                 {
+                    var startTime = DateTime.Now;
                     var result = await resultAsync.WithTimeout(span, cancellationTokenSource);
+                    var endTime = DateTime.Now;
 
-                    if (result.IntValue.HasValue && result.IntValue.Value == problem.Result)
+                    cancellationTokenSource.Cancel();
+
+                    var answer =
+                        new ProblemAnswer
+                        {
+                            Answer = result.IntValue ?? -1,
+                            AnswerDate = DateTime.Now,
+                            Duration = (endTime - startTime).Duration(),
+                            IsCorrect = result.IntValue.HasValue && result.IntValue.Value == problem.Result
+                        };
+                    
+                    problem.Answers.Add(answer);
+
+                    if (answer.IsCorrect)
                     {
-                        cancellationTokenSource.Cancel();
                         System.Console.ForegroundColor = correctColor;
                         System.Console.WriteLine("Correct");
                         correct++;
                     }
                     else
                     {
-                        cancellationTokenSource.Cancel();
                         System.Console.ForegroundColor = incorrectColor;
                         System.Console.WriteLine("Incorrect");
                         inCorrect++;
                     }
-
                 }
                 catch (TimeoutException ex)
                 {
